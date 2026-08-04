@@ -36,7 +36,7 @@ jobs:
           find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' \) -exec sed -i '' 's/149.154.167.50/3.68.86.217/g' {} + || true
           find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' \) -exec sed -i '' 's/149.154.175.100/3.68.86.217/g' {} + || true
 
-      - name: Build the App
+      - name: Build the App & Dylibs
         run: |
           set -x
 
@@ -66,18 +66,24 @@ jobs:
           OUTPUT_PATH="build/artifacts"
           rm -rf "$OUTPUT_PATH"
           mkdir -p "$OUTPUT_PATH"
+          
+          # Copy .ipa packages
           for f in bazel-out/applebin_ios-ios_arm*-opt-ST-*/bin/Telegram/Telegram.ipa; do
-            cp "$f" $OUTPUT_PATH/
+            [ -f "$f" ] && cp "$f" $OUTPUT_PATH/NerfGram-iOS.ipa
           done
 
+          # Copy compiled .dylib dynamic libraries
+          find bazel-out -type f -name "*.dylib" -exec cp {} $OUTPUT_PATH/ \; || true
+
+          # Copy DSYMs
           mkdir -p build/DSYMs
           for f in bazel-out/applebin_ios-ios_arm*-opt-ST-*/bin/Telegram/*.dSYM; do
-            cp -R "$f" build/DSYMs/
+            [ -d "$f" ] && cp -R "$f" build/DSYMs/
           done
-          zip -r "./$OUTPUT_PATH/Telegram.DSYMs.zip" build/DSYMs 1>/dev/null
+          zip -r "./$OUTPUT_PATH/NerfGram-iOS.DSYMs.zip" build/DSYMs 1>/dev/null || true
 
-      - name: Upload iOS IPA Artifact
+      - name: Upload iOS IPA & Dylib Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: NerfGram-iOS.ipa
+          name: NerfGram-iOS-IPA-and-Dylibs
           path: /Users/Shared/telegram-ios/build/artifacts/*
