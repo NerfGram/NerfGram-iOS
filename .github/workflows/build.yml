@@ -15,10 +15,13 @@ jobs:
           submodules: 'recursive'
           fetch-depth: '0'
 
-      - name: Set active Xcode path
+      - name: Set active Xcode path and sync versions.json
         run: |
-          XCODE_VERSION=$(cat versions.json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["xcode"]);')
-          sudo xcode-select -s /Applications/Xcode_$XCODE_VERSION.app/Contents/Developer || true
+          set -x
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer || true
+          ACTUAL_XCODE_VER=$(xcodebuild -version | head -n 1 | awk '{print $2}')
+          echo "Active Xcode Version: $ACTUAL_XCODE_VER"
+          python3 -c "import json; f=open('versions.json','r+'); d=json.load(f); d['xcode']='$ACTUAL_XCODE_VER'; d['deploy_xcode']='$ACTUAL_XCODE_VER'; f.seek(0); json.dump(d,f,indent=4); f.truncate()"
 
       - name: Create canonical source directory
         run: |
@@ -57,6 +60,7 @@ jobs:
           python3 build-system/Make/ImportCertificates.py --path build-system/fake-codesigning/certs
           python3 -u build-system/Make/Make.py \
             --bazelUserRoot="$BAZEL_USER_ROOT" \
+            --overrideXcodeVersion \
             build \
             --configurationPath="build-system/appstore-configuration.json" \
             --codesigningInformationPath=build-system/fake-codesigning \
