@@ -43,6 +43,9 @@ jobs:
           sed -i '' 's/composer_icon_folders = \["Telegram"\]/composer_icon_folders = []/g' Telegram/BUILD
           sed -i '' 's/#":DefaultAppIcon",/":DefaultAppIcon",/g' Telegram/BUILD
 
+          echo 'Patching Bundle ID to space.nerfgram.ios...'
+          find build-system -type f -name "*.json" -exec sed -i '' 's/ph.telegra.Telegraph/space.nerfgram.ios/g' {} + || true
+
       - name: Build the App & Dylibs
         run: |
           set -x
