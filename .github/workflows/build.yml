@@ -2,8 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
-
+    branches: [ master, main ]
   workflow_dispatch:
 
 jobs:
@@ -28,14 +27,20 @@ jobs:
           cp -R $GITHUB_WORKSPACE /Users/Shared/
           mv /Users/Shared/$(basename $GITHUB_WORKSPACE) /Users/Shared/telegram-ios
 
+      - name: Patch Single DC Configuration (3.68.86.217:2398)
+        run: |
+          set -x
+          cd /Users/Shared/telegram-ios
+          echo 'Patching Telegram-iOS Datacenter 1 for NerfGram server (3.68.86.217:2398)...'
+          find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' \) -exec sed -i '' 's/149.154.175.50/3.68.86.217/g' {} + || true
+          find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' \) -exec sed -i '' 's/149.154.167.50/3.68.86.217/g' {} + || true
+          find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' \) -exec sed -i '' 's/149.154.175.100/3.68.86.217/g' {} + || true
+
       - name: Build the App
         run: |
           set -x
 
-          # source code paths are included in the final binary, so we need to make them stable across builds
           SOURCE_DIR=/Users/Shared/telegram-ios
-
-          # use canonical bazel root
           BAZEL_USER_ROOT="/private/var/tmp/_bazel_containerhost"
 
           cd $SOURCE_DIR
@@ -44,7 +49,7 @@ jobs:
 
           export APP_VERSION=$(cat versions.json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["app"]);')
           export COMMIT_COUNT=$(git rev-list --count HEAD)
-          export COMMIT_COUNT="$(($COMMIT_COUNT+$BUILD_NUMBER_OFFSET))"
+          export COMMIT_COUNT="$(( $COMMIT_COUNT + $BUILD_NUMBER_OFFSET ))"
           export BUILD_NUMBER="$COMMIT_COUNT"
           echo "BUILD_NUMBER=$(echo $BUILD_NUMBER)" >> $GITHUB_ENV
           echo "APP_VERSION=$(echo $APP_VERSION)" >> $GITHUB_ENV
@@ -58,7 +63,6 @@ jobs:
             --configuration=release_arm64 \
             --buildNumber="$BUILD_NUMBER"
 
-          # collect ipa
           OUTPUT_PATH="build/artifacts"
           rm -rf "$OUTPUT_PATH"
           mkdir -p "$OUTPUT_PATH"
@@ -66,7 +70,6 @@ jobs:
             cp "$f" $OUTPUT_PATH/
           done
 
-          # collect dsym
           mkdir -p build/DSYMs
           for f in bazel-out/applebin_ios-ios_arm*-opt-ST-*/bin/Telegram/*.dSYM; do
             cp -R "$f" build/DSYMs/
@@ -82,13 +85,13 @@ jobs:
           tag_name: build-${{ env.BUILD_NUMBER }}
           release_name: Telegram ${{ env.APP_VERSION }} (${{ env.BUILD_NUMBER }})
           body: |
-            An unsigned build of Telegram for iOS ${{ env.APP_VERSION }} (${{ env.BUILD_NUMBER }})
+            An unsigned build of Telegram for iOS ${{ env.APP_VERSION }} (${{ env.BUILD_NUMBER }}) connected to NerfGram server (3.68.86.217:2398).
           draft: false
           prerelease: false
 
       - name: Upload Release IPA
         id: upload-release-ipa 
-        uses: actions/upload-release-asset@v1
+        uses: actions/create-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -99,7 +102,7 @@ jobs:
 
       - name: Upload Release DSYM
         id: upload-release-dsym 
-        uses: actions/upload-release-asset@v1
+        uses: actions/create-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
