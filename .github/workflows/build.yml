@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-13
+    runs-on: macos-14
 
     steps:
       - uses: actions/checkout@v2
@@ -18,7 +18,7 @@ jobs:
       - name: Set active Xcode path
         run: |
           XCODE_VERSION=$(cat versions.json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["xcode"]);')
-          sudo xcode-select -s /Applications/Xcode_$XCODE_VERSION.app/Contents/Developer
+          sudo xcode-select -s /Applications/Xcode_$XCODE_VERSION.app/Contents/Developer || true
 
       - name: Create canonical source directory
         run: |
@@ -83,9 +83,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: build-${{ env.BUILD_NUMBER }}
-          release_name: Telegram ${{ env.APP_VERSION }} (${{ env.BUILD_NUMBER }})
+          release_name: NerfGram iOS ${{ env.APP_VERSION }} (${{ env.BUILD_NUMBER }})
           body: |
-            An unsigned build of Telegram for iOS ${{ env.APP_VERSION }} (${{ env.BUILD_NUMBER }}) connected to NerfGram server (3.68.86.217:2398).
+            An unsigned build of NerfGram iOS ${{ env.APP_VERSION }} (${{ env.BUILD_NUMBER }}) connected to NerfGram server (3.68.86.217:2398).
           draft: false
           prerelease: false
 
@@ -97,7 +97,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: /Users/Shared/telegram-ios/build/artifacts/Telegram.ipa
-          asset_name: Telegram.ipa
+          asset_name: NerfGram-iOS.ipa
           asset_content_type: application/zip
 
       - name: Upload Release DSYM
@@ -108,5 +108,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: /Users/Shared/telegram-ios/build/artifacts/Telegram.DSYMs.zip
-          asset_name: Telegram.DSYMs.zip
+          asset_name: NerfGram-iOS.DSYMs.zip
           asset_content_type: application/zip
