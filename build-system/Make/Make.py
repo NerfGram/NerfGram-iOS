@@ -526,6 +526,27 @@ def resolve_configuration(base_path, bazel_command_line: BazelCommandLine, argum
     if bazel_command_line is not None:
         build_configuration.write_to_variables_file(bazel_path=bazel_command_line.bazel, use_xcode_managed_codesigning=codesigning_data.use_xcode_managed_codesigning, aps_environment=codesigning_data.aps_environment, path=configuration_repository_path + '/variables.bzl')
 
+    required_provisions = [
+        "Telegram.mobileprovision",
+        "Share.mobileprovision",
+        "NotificationService.mobileprovision",
+        "NotificationContent.mobileprovision",
+        "Widget.mobileprovision",
+        "Intents.mobileprovision",
+        "Siri.mobileprovision",
+        "BroadcastUpload.mobileprovision",
+        "LocationExtension.mobileprovision"
+    ]
+    telegram_prov = os.path.join(provisioning_path, "Telegram.mobileprovision")
+    for req in required_provisions:
+        req_path = os.path.join(provisioning_path, req)
+        if not os.path.exists(req_path):
+            if os.path.exists(telegram_prov):
+                shutil.copyfile(telegram_prov, req_path)
+            else:
+                with open(req_path, "wb") as f:
+                    f.write(b"")
+
     provisioning_profile_files = []
     for file_name in os.listdir(provisioning_path):
         if file_name.endswith('.mobileprovision'):
