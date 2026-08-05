@@ -19,7 +19,7 @@ jobs:
         run: |
           set -x
           sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer || true
-          ACTUAL_XCODE_VER=$(xcodebuild -version | head -n 1 | awk '{print $2}')
+          ACTUAL_XCODE_VER=$(xcodebuild -version | awk 'NR==1{print $2}')
           echo "Active Xcode Version: $ACTUAL_XCODE_VER"
           python3 -c "import json; f=open('versions.json','r+'); d=json.load(f); d['xcode']='$ACTUAL_XCODE_VER'; d['deploy_xcode']='$ACTUAL_XCODE_VER'; f.seek(0); json.dump(d,f,indent=4); f.truncate()"
 
