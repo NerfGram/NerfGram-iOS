@@ -30,14 +30,16 @@ jobs:
           cp -R $GITHUB_WORKSPACE /Users/Shared/
           mv /Users/Shared/$(basename $GITHUB_WORKSPACE) /Users/Shared/telegram-ios
 
-      - name: Patch Single DC Configuration (3.68.86.217:2398) & AppIcons for Xcode 15/16
+      - name: Patch Single DC Configuration (18.197.40.77:2398) & AppIcons for Xcode 15/16
         run: |
           set -x
           cd /Users/Shared/telegram-ios
-          echo 'Patching Telegram-iOS Datacenter 1 for NerfGram server (3.68.86.217:2398)...'
-          find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' \) -exec sed -i '' 's/149.154.175.50/3.68.86.217/g' {} + || true
-          find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' \) -exec sed -i '' 's/149.154.167.50/3.68.86.217/g' {} + || true
-          find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' \) -exec sed -i '' 's/149.154.175.100/3.68.86.217/g' {} + || true
+          echo 'Patching Telegram-iOS Datacenter 1 for NerfGram server (18.197.40.77:2398)...'
+          find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' \) -exec sed -i '' 's/149.154.175.50/18.197.40.77/g' {} + || true
+          find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' \) -exec sed -i '' 's/149.154.167.50/18.197.40.77/g' {} + || true
+          find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' \) -exec sed -i '' 's/149.154.175.100/18.197.40.77/g' {} + || true
+          find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' \) -exec sed -i '' 's/3.68.86.217/18.197.40.77/g' {} + || true
+          find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' \) -exec sed -i '' 's/35.159.68.166/18.197.40.77/g' {} + || true
 
           echo 'Patching Telegram/BUILD composer_icon_folders for Xcode 15/16 compatibility...'
           sed -i '' 's/composer_icon_folders = \["Telegram"\]/composer_icon_folders = []/g' Telegram/BUILD
