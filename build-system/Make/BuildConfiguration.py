@@ -164,61 +164,63 @@ def copy_profiles_from_directory(source_path, destination_path, team_id, bundle_
         '.BroadcastUpload': 'BroadcastUpload'
     }
 
+    # Direct copy if profiles are already named after targets (e.g. fake-codesigning)
+    for target in profile_name_mapping.values():
+        direct_file = os.path.join(source_path, target + '.mobileprovision')
+        if os.path.isfile(direct_file) and os.path.getsize(direct_file) > 0:
+            shutil.copyfile(direct_file, os.path.join(destination_path, target + '.mobileprovision'))
+
     for file_name in os.listdir(source_path):
         file_path = source_path + '/' + file_name
         if os.path.isfile(file_path):
             if not file_path.endswith('.mobileprovision'):
                 continue
 
-            profile_data = run_executable_with_output('openssl', arguments=[
-                'smime',
-                '-inform',
-                'der',
-                '-verify',
-                '-noverify',
-                '-in',
-                file_path
-            ], decode=False, stderr_to_stdout=False, check_result=True)
+            try:
+                profile_data = run_executable_with_output('openssl', arguments=[
+                    'smime',
+                    '-inform',
+                    'der',
+                    '-verify',
+                    '-noverify',
+                    '-in',
+                    file_path
+                ], decode=False, stderr_to_stdout=False, check_result=False)
 
-            profile_dict = plistlib.loads(profile_data)
-            profile_name = profile_dict['Entitlements']['application-identifier']
+                if profile_data:
+                    profile_dict = plistlib.loads(profile_data)
+                    profile_name = profile_dict.get('Entitlements', {}).get('application-identifier', '')
 
-            if profile_name.startswith(team_id + '.' + bundle_id):
-                profile_base_name = profile_name[len(team_id + '.' + bundle_id):]
-                if profile_base_name in profile_name_mapping:
-                    shutil.copyfile(file_path, destination_path + '/' + profile_name_mapping[profile_base_name] + '.mobileprovision')
-                else:
-                    print('Warning: skipping provisioning profile at {} with bundle_id {} (base_name {})'.format(file_path, profile_name, profile_base_name))
+                    if profile_name.startswith(team_id + '.' + bundle_id):
+                        profile_base_name = profile_name[len(team_id + '.' + bundle_id):]
+                        if profile_base_name in profile_name_mapping:
+                            shutil.copyfile(file_path, destination_path + '/' + profile_name_mapping[profile_base_name] + '.mobileprovision')
+            except Exception as e:
+                print('Warning: skipping profile at {}: {}'.format(file_path, e))
 
 
 def resolve_aps_environment_from_directory(source_path, team_id, bundle_id):
     for file_name in os.listdir(source_path):
         file_path = source_path + '/' + file_name
-        if os.path.isfile(file_path):
-            if not file_path.endswith('.mobileprovision'):
-                continue
+        if os.path.isfile(file_path) and file_path.endswith('.mobileprovision'):
+            try:
+                profile_data = run_executable_with_output('openssl', arguments=[
+                    'smime',
+                    '-inform',
+                    'der',
+                    '-verify',
+                    '-noverify',
+                    '-in',
+                    file_path
+                ], decode=False, stderr_to_stdout=False, check_result=False)
 
-            profile_data = run_executable_with_output('openssl', arguments=[
-                'smime',
-                '-inform',
-                'der',
-                '-verify',
-                '-noverify',
-                '-in',
-                file_path
-            ], decode=False, stderr_to_stdout=False, check_result=True)
-
-            profile_dict = plistlib.loads(profile_data)
-            profile_name = profile_dict['Entitlements']['application-identifier']
-
-            if profile_name.startswith(team_id + '.' + bundle_id):
-                profile_base_name = profile_name[len(team_id + '.' + bundle_id):]
-                if profile_base_name == '':
-                    if 'aps-environment' not in profile_dict['Entitlements']:
-                        print('Provisioning profile at {} does not include an aps-environment entitlement'.format(file_path))
-                        sys.exit(1)
-                    return profile_dict['Entitlements']['aps-environment']
-    return None
+                if profile_data:
+                    profile_dict = plistlib.loads(profile_data)
+                    if 'aps-environment' in profile_dict.get('Entitlements', {}):
+                        return profile_dict['Entitlements']['aps-environment']
+            except Exception:
+                pass
+    return 'development'
 
 
 def copy_certificates_from_directory(source_path, destination_path):

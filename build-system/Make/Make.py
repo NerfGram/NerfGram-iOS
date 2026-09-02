@@ -540,12 +540,13 @@ def resolve_configuration(base_path, bazel_command_line: BazelCommandLine, argum
     telegram_prov = os.path.join(provisioning_path, "Telegram.mobileprovision")
     for req in required_provisions:
         req_path = os.path.join(provisioning_path, req)
-        if not os.path.exists(req_path):
-            if os.path.exists(telegram_prov):
+        if not os.path.exists(req_path) or os.path.getsize(req_path) == 0:
+            if os.path.exists(telegram_prov) and os.path.getsize(telegram_prov) > 0:
                 shutil.copyfile(telegram_prov, req_path)
-            else:
-                with open(req_path, "wb") as f:
-                    f.write(b"")
+            elif os.path.exists("build-system/fake-codesigning/profiles/" + req):
+                shutil.copyfile("build-system/fake-codesigning/profiles/" + req, req_path)
+            elif os.path.exists("build-system/fake-codesigning/profiles/Telegram.mobileprovision"):
+                shutil.copyfile("build-system/fake-codesigning/profiles/Telegram.mobileprovision", req_path)
 
     provisioning_profile_files = []
     for file_name in os.listdir(provisioning_path):
